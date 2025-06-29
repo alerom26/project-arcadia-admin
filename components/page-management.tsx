@@ -249,7 +249,7 @@ export function PageManagement({ currentUser }: PageManagementProps) {
                   ? "Update the page content and settings."
                   : "Create a new custom page with access controls."}
               </DialogDescription>
-            </DialogHeader>
+            </CardHeader>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -282,6 +282,7 @@ export function PageManagement({ currentUser }: PageManagementProps) {
 
               <div>
                 <Label htmlFor="content">Page Content</Label>
+                {/* Integrate ReactQuill here */}
                 <ReactQuill
                   theme="snow"
                   value={formData.content}
@@ -474,7 +475,7 @@ export function PageManagement({ currentUser }: PageManagementProps) {
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-red-600 bg-transparent">
+                        <Button variant="outline" size="sm" className="text-red-600">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -501,11 +502,7 @@ export function PageManagement({ currentUser }: PageManagementProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-gray-700">
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: page.content.substring(0, 200) + "...",
-                    }}
-                  />
+                  <div dangerouslySetInnerHTML={{ __html: page.content.substring(0, 200) + "..." }} />
                 </div>
               </CardContent>
             </Card>
