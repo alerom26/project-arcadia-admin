@@ -501,7 +501,11 @@ export function PageManagement({ currentUser }: PageManagementProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-gray-700">
-                  <div dangerouslySetInnerHTML={{ __html: page.content.substring(0, 200) + "..." }} />
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: page.content.substring(0, 200) + "...",
+                    }}
+                  />
                 </div>
               </CardContent>
             </Card>
