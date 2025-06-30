@@ -1,19 +1,6 @@
 "use client"
 
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  ArrowLeft,
-  Video,
-  Phone,
-  FileText,
-  Settings,
-  CheckCircle,
-  XCircle,
-  HelpCircle,
-} from "lucide-react"
+import { Calendar, Clock, MapPin, Users, ArrowLeft, Video, Phone, FileText, Settings } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { AuthGuard } from "@/components/auth-guard"
 import { getCurrentUser } from "@/lib/auth"
-import { getMeetingsForUser, updateMeetingAttendance, type MeetingWithInvitations } from "@/lib/meetings"
+import { getMeetingsForUser, type MeetingWithInvitations } from "@/lib/meetings"
 import { MeetingManagement } from "@/components/meeting-management"
 import { useEffect, useState } from "react"
 import type { Member } from "@/lib/auth"
@@ -53,14 +40,6 @@ function CalendarPage() {
     }
   }
 
-  const handleRsvp = async (meetingId: string, status: "attending" | "not_attending" | "maybe") => {
-    if (!user) return
-    const success = await updateMeetingAttendance(meetingId, user.username, status, user.username)
-    if (success) {
-      handleMeetingChange() // Refresh meetings to show updated RSVP
-    }
-  }
-
   const getTypeColor = (type: string) => {
     switch (type) {
       case "required":
@@ -73,38 +52,6 @@ function CalendarPage() {
         return "bg-purple-600"
       default:
         return "bg-gray-600"
-    }
-  }
-
-  const getAttendanceStatusColor = (status: string) => {
-    switch (status) {
-      case "attending":
-      case "attended":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "not_attending":
-      case "absent":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "maybe":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "pending":
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
-
-  const getAttendanceStatusIcon = (status: string) => {
-    switch (status) {
-      case "attending":
-      case "attended":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case "not_attending":
-      case "absent":
-        return <XCircle className="h-4 w-4 text-red-600" />
-      case "maybe":
-        return <HelpCircle className="h-4 w-4 text-yellow-600" />
-      case "pending":
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />
     }
   }
 
@@ -226,147 +173,104 @@ function CalendarPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  meetings.map((meeting) => {
-                    const userAttendance = meeting.attendees.find((att) => att.member_id === user?.username)
-                    const attendanceStatus = userAttendance?.status || "pending"
-
-                    return (
-                      <Card key={meeting.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-xl mb-2">{meeting.title}</CardTitle>
-                              <CardDescription className="text-base">{meeting.description}</CardDescription>
-                            </div>
-                            <Badge className={getTypeColor(meeting.type)}>{meeting.type.replace("_", " ")}</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {/* Meeting Details */}
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                              <div className="flex items-center space-x-3">
-                                <Calendar className="h-5 w-5 text-blue-600" />
-                                <div>
-                                  <p className="font-medium">{formatDate(meeting.date)}</p>
-                                  <p className="text-sm text-gray-600">{formatTime(meeting.time)}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <Clock className="h-5 w-5 text-green-600" />
-                                <div>
-                                  <p className="font-medium">Duration</p>
-                                  <p className="text-sm text-gray-600">{meeting.duration} minutes</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              <div className="flex items-center space-x-3">
-                                <MapPin className="h-5 w-5 text-purple-600" />
-                                <div>
-                                  <p className="font-medium">Location</p>
-                                  <p className="text-sm text-gray-600">{meeting.location}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <Users className="h-5 w-5 text-orange-600" />
-                                <div>
-                                  <p className="font-medium">Attendees</p>
-                                  <p className="text-sm text-gray-600">
-                                    {meeting.type === "full_member"
-                                      ? "All members"
-                                      : meeting.type === "executive"
-                                        ? "All executives"
-                                        : `${meeting.invited_members.length} invited members`}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <Separator />
-
-                          {/* Your Attendance Status */}
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="flex items-center space-x-2">
-                              {getAttendanceStatusIcon(attendanceStatus)}
-                              <span className="font-medium">Your Status:</span>
-                              <Badge className={getAttendanceStatusColor(attendanceStatus)}>
-                                {attendanceStatus.replace("_", " ")}
-                              </Badge>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRsvp(meeting.id, "attending")}
-                                disabled={attendanceStatus === "attending"}
-                              >
-                                Attending
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRsvp(meeting.id, "not_attending")}
-                                disabled={attendanceStatus === "not_attending"}
-                              >
-                                Not Attending
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRsvp(meeting.id, "maybe")}
-                                disabled={attendanceStatus === "maybe"}
-                              >
-                                Maybe
-                              </Button>
-                            </div>
-                          </div>
-
-                          <Separator />
-
-                          {/* Agenda */}
+                  meetings.map((meeting) => (
+                    <Card key={meeting.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-semibold mb-2 flex items-center">
-                              <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                              Agenda
-                            </h4>
-                            <ul className="space-y-1">
-                              {meeting.agenda.map((item, index) => (
-                                <li key={index} className="text-sm text-gray-600 flex items-center">
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
+                            <CardTitle className="text-xl mb-2">{meeting.title}</CardTitle>
+                            <CardDescription className="text-base">{meeting.description}</CardDescription>
                           </div>
-
-                          <Separator />
-
-                          {/* Actions */}
-                          <div className="flex flex-wrap gap-3">
-                            {meeting.zoom_link && (
-                              <Button size="sm" asChild>
-                                <Link href={meeting.zoom_link} target="_blank">
-                                  <Video className="h-4 w-4 mr-2" />
-                                  Join Meeting
-                                </Link>
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm">
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Add to Calendar
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Phone className="h-4 w-4 mr-2" />
-                              Dial-in Info
-                            </Button>
+                          <Badge className={getTypeColor(meeting.type)}>{meeting.type.replace("_", " ")}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Meeting Details */}
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <Calendar className="h-5 w-5 text-blue-600" />
+                              <div>
+                                <p className="font-medium">{formatDate(meeting.date)}</p>
+                                <p className="text-sm text-gray-600">{formatTime(meeting.time)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Clock className="h-5 w-5 text-green-600" />
+                              <div>
+                                <p className="font-medium">Duration</p>
+                                <p className="text-sm text-gray-600">{meeting.duration} minutes</p>
+                              </div>
+                            </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    )\
-                  })}\
-                </div>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <MapPin className="h-5 w-5 text-purple-600" />
+                              <div>
+                                <p className="font-medium">Location</p>
+                                <p className="text-sm text-gray-600">{meeting.location}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Users className="h-5 w-5 text-orange-600" />
+                              <div>
+                                <p className="font-medium">Attendees</p>
+                                <p className="text-sm text-gray-600">
+                                  {meeting.type === "full_member"
+                                    ? "All members"
+                                    : meeting.type === "executive"
+                                      ? "All executives"
+                                      : `${meeting.invited_members.length} invited members`}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        {/* Agenda */}
+                        <div>
+                          <h4 className="font-semibold mb-2 flex items-center">
+                            <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                            Agenda
+                          </h4>
+                          <ul className="space-y-1">
+                            {meeting.agenda.map((item, index) => (
+                              <li key={index} className="text-sm text-gray-600 flex items-center">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <Separator />
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-3">
+                          {meeting.zoom_link && (
+                            <Button size="sm" asChild>
+                              <Link href={meeting.zoom_link} target="_blank">
+                                <Video className="h-4 w-4 mr-2" />
+                                Join Meeting
+                              </Link>
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Add to Calendar
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Phone className="h-4 w-4 mr-2" />
+                            Dial-in Info
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </>
           )}
         </div>
