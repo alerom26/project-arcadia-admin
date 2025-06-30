@@ -518,21 +518,21 @@ function MemberPortal() {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                          <Link href="https://discord.gg/projectarcadia" target="_blank">
+                          <Link href="https://admin.projectarcadia.xyz" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Discord Server
+                            Online Chat
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                          <Link href="https://slack.projectarcadia.com" target="_blank">
+                          <Link href="https://gmail.com" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Slack Workspace
+                            Gmail
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                          <Link href="mailto:team@projectarcadia.com">
+                          <Link href="https://webmail.gandi.net/roundcube/">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Team Email
+                            Branded Email
                           </Link>
                         </Button>
                       </CardContent>
