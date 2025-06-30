@@ -243,7 +243,7 @@ function MemberPortal() {
                           <div className="border-l-4 border-green-600 pl-4">
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-semibold">Leadership Council</h4>
-                              <Badge variant="outline">Execs Only</Badge>
+                              <Badge variant="outline">Leadership Only</Badge>
                             </div>
                             <p className="text-sm text-gray-600 mb-1">Wednesday, Jan 4, 2025 • 8:00 PM EST</p>
                             <p className="text-sm text-gray-500 flex items-center">

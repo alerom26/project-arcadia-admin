@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Users, Edit, UserPlus, Ban, CheckCircle, Settings, Shield } from "lucide-react"
+import { Users, Edit, UserPlus, Ban, CheckCircle, FileText, MessageSquare, Settings, Shield } from "lucide-react"
 import {
   getAllMembers,
   createMember,
@@ -39,8 +39,6 @@ import {
   type Member,
   type CustomPermissions,
 } from "@/lib/auth"
-import { PageManagement } from "./page-management"
-import { ChatManagement } from "./chat-management"
 
 interface AdminDashboardProps {
   currentUser: Member
@@ -445,11 +443,39 @@ export function AdminDashboard({ currentUser }: AdminDashboardProps) {
         </TabsContent>
 
         <TabsContent value="pages" className="space-y-4">
-          <PageManagement currentUser={currentUser} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Custom Pages
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Page management coming soon...</p>
+                <p className="text-sm text-gray-400">Create and manage custom pages with access controls.</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="chat" className="space-y-4">
-          <ChatManagement currentUser={currentUser} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageSquare className="h-5 w-5 mr-2" />
+                Chat Channels
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Chat management coming soon...</p>
+                <p className="text-sm text-gray-400">Create and manage chat channels and group conversations.</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
