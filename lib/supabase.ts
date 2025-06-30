@@ -34,18 +34,7 @@ export interface MeetingInvitation {
   invited_at: string
 }
 
-export interface MeetingAttendee {
-  id: string
-  meeting_id: string
-  member_id: string
-  status: "pending" | "attending" | "not_attending" | "maybe" | "attended" | "absent"
-  responded_at: string | null
-  marked_by: string | null
-  marked_at: string | null
-}
-
 export interface MeetingWithInvitations extends Meeting {
   invitations: MeetingInvitation[]
   invited_members: string[]
-  attendees: MeetingAttendee[] // Add attendees to the interface
 }
