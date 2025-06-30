@@ -1,21 +1,23 @@
 "use client"
 
-import { supabase, type Meeting, type MeetingInvitation } from "./supabase"
+import { supabase, type Meeting, type MeetingInvitation, type MeetingAttendee } from "./supabase"
 import { members, type Member } from "./auth"
 
 export interface MeetingWithInvitations extends Meeting {
   invitations: MeetingInvitation[]
   invited_members: string[]
+  attendees: MeetingAttendee[]
 }
 
 export async function getMeetingsForUser(userId: string, userTier: string): Promise<MeetingWithInvitations[]> {
   try {
-    // Get all meetings with their invitations
+    // Get all meetings with their invitations and attendees
     const { data: meetings, error: meetingsError } = await supabase
       .from("meetings")
       .select(`
         *,
-        meeting_invitations (*)
+        meeting_invitations (*),
+        meeting_attendees (*)
       `)
       .order("date", { ascending: true })
 
@@ -43,11 +45,12 @@ export async function getMeetingsForUser(userId: string, userTier: string): Prom
         return false
       }) || []
 
-    // Transform the data to include invited members list
+    // Transform the data to include invited members list and attendees
     return accessibleMeetings.map((meeting) => ({
       ...meeting,
       invitations: meeting.meeting_invitations || [],
       invited_members: meeting.meeting_invitations?.map((inv: any) => inv.member_id) || [],
+      attendees: meeting.meeting_attendees || [], // Include attendees
     }))
   } catch (error) {
     console.error("Error in getMeetingsForUser:", error)
@@ -84,6 +87,32 @@ export async function createMeeting(
 
       if (invitationError) {
         console.error("Error creating invitations:", invitationError)
+        return false
+      }
+    } else if (meeting.type === "full_member") {
+      // For full_member meetings, invite all members
+      const allMembers = members.map((m) => m.username)
+      const invitations = allMembers.map((memberId) => ({
+        meeting_id: newMeeting.id,
+        member_id: memberId,
+        invited_by: meeting.created_by,
+      }))
+      const { error: invitationError } = await supabase.from("meeting_invitations").insert(invitations)
+      if (invitationError) {
+        console.error("Error creating full_member invitations:", invitationError)
+        return false
+      }
+    } else if (meeting.type === "executive") {
+      // For executive meetings, invite all executives
+      const allExecutives = members.filter((m) => m.tier === "ceo" || m.tier === "executive").map((m) => m.username)
+      const invitations = allExecutives.map((memberId) => ({
+        meeting_id: newMeeting.id,
+        member_id: memberId,
+        invited_by: meeting.created_by,
+      }))
+      const { error: invitationError } = await supabase.from("meeting_invitations").insert(invitations)
+      if (invitationError) {
+        console.error("Error creating executive invitations:", invitationError)
         return false
       }
     }
@@ -140,6 +169,51 @@ export async function deleteMeeting(meetingId: string): Promise<boolean> {
   } catch (error) {
     console.error("Error in deleteMeeting:", error)
     return false
+  }
+}
+
+export async function updateMeetingAttendance(
+  meetingId: string,
+  memberId: string,
+  status: MeetingAttendee["status"],
+  markedBy: string,
+): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("meeting_attendees").upsert(
+      {
+        meeting_id: meetingId,
+        member_id: memberId,
+        status: status,
+        responded_at: new Date().toISOString(),
+        marked_by: markedBy,
+        marked_at: new Date().toISOString(),
+      },
+      { onConflict: "meeting_id,member_id" }, // Upsert based on these unique columns
+    )
+
+    if (error) {
+      console.error("Error updating attendance:", error)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error("Error in updateMeetingAttendance:", error)
+    return false
+  }
+}
+
+export async function getMeetingAttendees(meetingId: string): Promise<MeetingAttendee[]> {
+  try {
+    const { data, error } = await supabase.from("meeting_attendees").select("*").eq("meeting_id", meetingId)
+
+    if (error) {
+      console.error("Error fetching meeting attendees:", error)
+      return []
+    }
+    return data || []
+  } catch (error) {
+    console.error("Error in getMeetingAttendees:", error)
+    return []
   }
 }
 

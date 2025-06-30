@@ -541,25 +541,25 @@ function MemberPortal() {
                     {/* Project Management */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-purple-600">Website Management</CardTitle>
+                        <CardTitle className="text-purple-600">Project Management</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                          <Link href="https://github.com/Project-Arcadia-2025" target="_blank">
+                          <Link href="https://github.com/projectarcadia" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
                             GitHub Organization
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                          <Link href="https://cloudflare.com" target="_blank">
+                          <Link href="https://trello.com/projectarcadia" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Cloudflare
+                            Trello Boards
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                          <Link href="https://gandi.net" target="_blank">
+                          <Link href="https://notion.so/projectarcadia" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Gandi
+                            Notion Workspace
                           </Link>
                         </Button>
                       </CardContent>

@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import dynamic from "next/dynamic" // Import dynamic for client-side rendering of ReactQuill
+import "react-quill/dist/quill.snow.css" // Import Quill styles
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -28,9 +29,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, Eye, EyeOff, FileText } from "lucide-react"
+import { Plus, Edit, Trash2, Eye, EyeOff, FileText, ExternalLink } from "lucide-react"
+import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { getAllMembers, type Member } from "@/lib/auth"
+
+// Dynamically import ReactQuill to ensure it's only rendered on the client side
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false })
 
 interface CustomPage {
   id: string
@@ -276,13 +281,34 @@ export function PageManagement({ currentUser }: PageManagementProps) {
               </div>
 
               <div>
-                <Label htmlFor="content">Page Content (HTML)</Label>
-                <Textarea
-                  id="content"
+                <Label htmlFor="content">Page Content</Label>
+                <ReactQuill
+                  theme="snow"
                   value={formData.content}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
-                  rows={10}
-                  placeholder="<h1>Welcome to my page</h1><p>This is the content...</p>"
+                  onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                  modules={{
+                    toolbar: [
+                      [{ header: [1, 2, false] }],
+                      ["bold", "italic", "underline", "strike", "blockquote"],
+                      [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+                      ["link", "image"],
+                      ["clean"],
+                    ],
+                  }}
+                  formats={[
+                    "header",
+                    "bold",
+                    "italic",
+                    "underline",
+                    "strike",
+                    "blockquote",
+                    "list",
+                    "bullet",
+                    "indent",
+                    "link",
+                    "image",
+                  ]}
+                  placeholder="Start writing your page content here..."
                 />
               </div>
 
@@ -432,6 +458,13 @@ export function PageManagement({ currentUser }: PageManagementProps) {
                     <Button variant="outline" size="sm" onClick={() => openEditDialog(page)}>
                       <Edit className="h-4 w-4" />
                     </Button>
+                    {page.is_published && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/pages/${page.slug}`} target="_blank">
+                          <ExternalLink className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -441,7 +474,7 @@ export function PageManagement({ currentUser }: PageManagementProps) {
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-red-600">
+                        <Button variant="outline" size="sm" className="text-red-600 bg-transparent">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -468,7 +501,11 @@ export function PageManagement({ currentUser }: PageManagementProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-gray-700">
-                  <div dangerouslySetInnerHTML={{ __html: page.content.substring(0, 200) + "..." }} />
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: page.content.substring(0, 200) + "...",
+                    }}
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -45,9 +45,9 @@ export default function LoginPage() {
 
     if (user) {
       if (user.status === "suspended") {
-        setError("Your account has been suspended. Please contact an IT administrator.")
+        setError("Your account has been suspended. Please contact an administrator.")
       } else if (user.status === "inactive") {
-        setError("Your account is inactive. Please contact an IT administrator.")
+        setError("Your account is inactive. Please contact an administrator.")
       } else {
         router.push("/")
       }
@@ -56,7 +56,7 @@ export default function LoginPage() {
       setAttempts(newAttempts)
 
       if (newAttempts >= 5) {
-        setError("Too many failed attempts. Contact an IT administrator to unblock. Redirecting to guest page...")
+        setError("Too many failed attempts. Redirecting to guest page...")
         setTimeout(() => {
           window.location.href = "http://www.joinus.projectarcadia.xyz"
         }, 2000)
