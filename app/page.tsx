@@ -601,19 +601,25 @@ function MemberPortal() {
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                           <Link href="https://drive.google.com/drive/folders/arcadia" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Shared Drive
+                            Google Drive Folder
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                           <Link href="https://calendar.google.com/calendar/arcadia" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Shared Calendar
+                            Project Arcadia Full Calendar
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                           <Link href="https://zoom.us/j/arcadia" target="_blank">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Zoom Room
+                            Main Meeting ID
+                          </Link>
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                          <Link href="https://form.jotform.com/252191736742056" target="_blank">
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            New Vote Request
                           </Link>
                         </Button>
                       </CardContent>

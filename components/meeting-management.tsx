@@ -19,9 +19,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Calendar, Trash2, Edit } from "lucide-react"
-import { createMeeting, getInvitableMembers, type MeetingWithInvitations } from "@/lib/meetings"
+import { Plus, Calendar, Trash2, Edit, Users } from "lucide-react"
+import {
+  createMeeting,
+  getInvitableMembers,
+  updateMeetingAttendance,
+  type MeetingWithInvitations,
+} from "@/lib/meetings"
 import type { Member } from "@/lib/auth"
+import { getAllMembers } from "@/lib/auth" // Import getAllMembers
 
 interface MeetingManagementProps {
   user: Member
@@ -31,7 +37,10 @@ interface MeetingManagementProps {
 
 export function MeetingManagement({ user, meetings, onMeetingChange }: MeetingManagementProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false)
+  const [currentMeetingForAttendance, setCurrentMeetingForAttendance] = useState<MeetingWithInvitations | null>(null)
   const [invitableMembers, setInvitableMembers] = useState<Member[]>([])
+  const [allMembers, setAllMembers] = useState<Member[]>([]) // To get names for attendance
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -47,6 +56,7 @@ export function MeetingManagement({ user, meetings, onMeetingChange }: MeetingMa
 
   useEffect(() => {
     setInvitableMembers(getInvitableMembers())
+    setAllMembers(getAllMembers())
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,6 +85,50 @@ export function MeetingManagement({ user, meetings, onMeetingChange }: MeetingMa
       })
       setSelectedMembers([])
       onMeetingChange()
+    }
+  }
+
+  const handleUpdateAttendance = async (
+    meetingId: string,
+    memberId: string,
+    status: "pending" | "attending" | "not_attending" | "maybe" | "attended" | "absent",
+  ) => {
+    const success = await updateMeetingAttendance(meetingId, memberId, status, user.username)
+    if (success) {
+      onMeetingChange() // Refresh meetings to show updated attendance
+      // Optionally, update currentMeetingForAttendance state directly if needed for immediate UI feedback
+      if (currentMeetingForAttendance && currentMeetingForAttendance.id === meetingId) {
+        setCurrentMeetingForAttendance((prev) => {
+          if (!prev) return null
+          const existingAttendee = prev.attendees.find((att) => att.member_id === memberId)
+          if (existingAttendee) {
+            return {
+              ...prev,
+              attendees: prev.attendees.map((att) =>
+                att.member_id === memberId
+                  ? { ...att, status, marked_by: user.username, marked_at: new Date().toISOString() }
+                  : att,
+              ),
+            }
+          } else {
+            return {
+              ...prev,
+              attendees: [
+                ...prev.attendees,
+                {
+                  id: `temp-${Date.now()}`, // Temp ID for UI, will be replaced by DB ID
+                  meeting_id: meetingId,
+                  member_id: memberId,
+                  status,
+                  responded_at: new Date().toISOString(),
+                  marked_by: user.username,
+                  marked_at: new Date().toISOString(),
+                },
+              ],
+            }
+          }
+        })
+      }
     }
   }
 
@@ -134,6 +188,26 @@ export function MeetingManagement({ user, meetings, onMeetingChange }: MeetingMa
   }
 
   const shouldShowMemberSelection = formData.type === "optional" || formData.type === "required"
+
+  const getMemberName = (username: string) => {
+    return allMembers.find((m) => m.username === username)?.name || username
+  }
+
+  const getAttendanceStatusColor = (status: string) => {
+    switch (status) {
+      case "attending":
+      case "attended":
+        return "bg-green-100 text-green-800"
+      case "not_attending":
+      case "absent":
+        return "bg-red-100 text-red-800"
+      case "maybe":
+        return "bg-yellow-100 text-yellow-800"
+      case "pending":
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -310,67 +384,163 @@ export function MeetingManagement({ user, meetings, onMeetingChange }: MeetingMa
       </div>
 
       <div className="grid gap-4">
-        {meetings.map((meeting) => (
-          <Card key={meeting.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Calendar className="h-5 w-5" />
-                    <span>{meeting.title}</span>
-                    <Badge className={getTypeColor(meeting.type)}>{meeting.type.replace("_", " ")}</Badge>
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">{meeting.description}</p>
+        {meetings.map((meeting) => {
+          const canManageAttendance = user.isAdmin || meeting.created_by === user.username
+          const attendingCount = meeting.attendees.filter(
+            (a) => a.status === "attending" || a.status === "attended",
+          ).length
+          const notAttendingCount = meeting.attendees.filter(
+            (a) => a.status === "not_attending" || a.status === "absent",
+          ).length
+          const maybeCount = meeting.attendees.filter((a) => a.status === "maybe").length
+          const pendingCount = meeting.invited_members.length - (attendingCount + notAttendingCount + maybeCount)
+
+          return (
+            <Card key={meeting.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Calendar className="h-5 w-5" />
+                      <span>{meeting.title}</span>
+                      <Badge className={getTypeColor(meeting.type)}>{meeting.type.replace("_", " ")}</Badge>
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 mt-1">{meeting.description}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    {canManageAttendance && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCurrentMeetingForAttendance(meeting)
+                          setIsAttendanceOpen(true)
+                        }}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p>
-                    <strong>Date:</strong> {new Date(meeting.date).toLocaleDateString()}
-                  </p>
-                  <p>
-                    <strong>Time:</strong> {meeting.time}
-                  </p>
-                  <p>
-                    <strong>Duration:</strong> {meeting.duration} minutes
-                  </p>
-                </div>
-                <div>
-                  <p>
-                    <strong>Location:</strong> {meeting.location}
-                  </p>
-                  <p>
-                    <strong>Created by:</strong> {meeting.created_by}
-                  </p>
-                  {meeting.type === "optional" || meeting.type === "required" ? (
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
                     <p>
-                      <strong>Invited:</strong> {meeting.invited_members.length} members
+                      <strong>Date:</strong> {new Date(meeting.date).toLocaleDateString()}
                     </p>
-                  ) : meeting.type === "full_member" ? (
                     <p>
-                      <strong>Invited:</strong> All members
+                      <strong>Time:</strong> {meeting.time}
                     </p>
-                  ) : (
                     <p>
-                      <strong>Invited:</strong> All executives
+                      <strong>Duration:</strong> {meeting.duration} minutes
                     </p>
-                  )}
+                  </div>
+                  <div>
+                    <p>
+                      <strong>Location:</strong> {meeting.location}
+                    </p>
+                    <p>
+                      <strong>Created by:</strong> {meeting.created_by}
+                    </p>
+                    {meeting.type === "optional" || meeting.type === "required" ? (
+                      <p>
+                        <strong>Invited:</strong> {meeting.invited_members.length} members
+                      </p>
+                    ) : meeting.type === "full_member" ? (
+                      <p>
+                        <strong>Invited:</strong> All members
+                      </p>
+                    ) : (
+                      <p>
+                        <strong>Invited:</strong> All executives
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                {canManageAttendance && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-semibold mb-2">Attendance Summary:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-green-100 text-green-800">Attending: {attendingCount}</Badge>
+                      <Badge className="bg-red-100 text-red-800">Not Attending: {notAttendingCount}</Badge>
+                      <Badge className="bg-yellow-100 text-yellow-800">Maybe: {maybeCount}</Badge>
+                      <Badge className="bg-gray-100 text-gray-800">Pending: {pendingCount}</Badge>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
+
+      {/* Attendance Management Dialog */}
+      <Dialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Attendance for "{currentMeetingForAttendance?.title}"</DialogTitle>
+            <DialogDescription>View and update attendance status for invited members.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {currentMeetingForAttendance?.invited_members.length === 0 && (
+              <p className="text-gray-500">No specific members invited to this meeting type.</p>
+            )}
+            {currentMeetingForAttendance?.invited_members.map((memberId) => {
+              const memberName = getMemberName(memberId)
+              const currentStatus =
+                currentMeetingForAttendance?.attendees.find((att) => att.member_id === memberId)?.status || "pending"
+              const markedBy = currentMeetingForAttendance?.attendees.find(
+                (att) => att.member_id === memberId,
+              )?.marked_by
+              const markedAt = currentMeetingForAttendance?.attendees.find(
+                (att) => att.member_id === memberId,
+              )?.marked_at
+
+              return (
+                <div key={memberId} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{memberName}</p>
+                    <Badge className={`mt-1 ${getAttendanceStatusColor(currentStatus)}`}>
+                      {currentStatus.replace("_", " ")}
+                    </Badge>
+                    {markedBy && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {markedBy === memberId ? "Self-responded" : `Marked by ${markedBy}`} on{" "}
+                        {new Date(markedAt!).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <Select
+                    value={currentStatus}
+                    onValueChange={(value: any) =>
+                      handleUpdateAttendance(currentMeetingForAttendance!.id, memberId, value)
+                    }
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="attending">Attending (RSVP)</SelectItem>
+                      <SelectItem value="not_attending">Not Attending (RSVP)</SelectItem>
+                      <SelectItem value="maybe">Maybe (RSVP)</SelectItem>
+                      <SelectItem value="attended">Attended (Admin)</SelectItem>
+                      <SelectItem value="absent">Absent (Admin)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
